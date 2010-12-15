@@ -89,8 +89,12 @@ function stream:connect(connect_host, connect_port)
 	end
 	
 	self.conn = conn;
-	local w, t = conn.write, tostring;
-	self.send = function (_, data) return w(conn, t(data)); end
+	self.send = function (stream, data)
+		self:event("outgoing", data);
+		data = tostring(data);
+		self:event("outgoing-raw", data);
+		return conn:write(data);
+	end;
 	return true;
 end
 
@@ -171,7 +175,7 @@ end
 function stream:add_plugin(name)
 	if require("verse.plugins."..name) then
 		local ok, err = verse.plugins[name](self);
-		if ok then
+		if ok ~= false then
 			self:debug("Loaded %s plugin", name);
 		else
 			self:warn("Failed to load %s plugin: %s", name, err);
@@ -186,7 +190,6 @@ function new_listener(stream)
 	
 	function conn_listener.onconnect(conn)
 		stream.connected = true;
-		stream.send = function (stream, data) stream:debug("Sending data: "..tostring(data)); return conn:write(tostring(data)); end;
 		stream:event("connected");
 	end
 	
