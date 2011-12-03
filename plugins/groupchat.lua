@@ -1,3 +1,4 @@
+local verse = require "verse";
 local events = require "events";
 
 local room_mt = {};
@@ -145,7 +146,10 @@ end
 
 function room_mt:leave(message)
 	self.stream:event("groupchat/leaving", self);
-	self:send(verse.presence({type="unavailable"}));
+	local presence = verse.presence({type="unavailable"});
+	if message then
+		presence:tag("status"):text(message);
+	self:send(presence);
 end
 
 function room_mt:admin_set(nick, what, value, reason)
