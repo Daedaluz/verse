@@ -1,5 +1,5 @@
 local verse = require "verse";
-local now = socket.gettime;
+local now = require"socket".gettime;
 
 local xmlns_sm = "urn:xmpp:sm:2";
 
@@ -9,10 +9,10 @@ function verse.plugins.smacks(stream)
 	local last_ack = 0;
 	local last_stanza_time = now();
 	local timer_active;
-	
+
 	-- State for incoming stanzas
 	local handled_stanza_count = 0;
-	
+
 	-- Catch incoming stanzas
 	local function incoming_stanza(stanza)
 		if stanza.attr.xmlns == "jabber:client" or not stanza.attr.xmlns then
@@ -22,7 +22,7 @@ function verse.plugins.smacks(stream)
 	end
 
 	-- Catch outgoing stanzas
-	function outgoing_stanza(stanza)
+	local function outgoing_stanza(stanza)
 		-- NOTE: This will not behave nice if stanzas are serialized before this point
 		if stanza.name and not stanza.attr.xmlns then
 			-- serialize stanzas in order to bypass this on resumption
@@ -59,14 +59,14 @@ function verse.plugins.smacks(stream)
 			end);
 			return true;
 		end
-	end	
+	end
 
 	-- Graceful shutdown
 	local function on_close()
 		stream.resumption_token = nil;
 		stream:unhook("disconnected", on_disconnect);
 	end
-	
+
 	local function handle_sm_command(stanza)
 		if stanza.name == "r" then -- Request for acks for stanzas we received
 			stream:debug("Ack requested... acking %d handled stanzas", handled_stanza_count);

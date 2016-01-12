@@ -1,16 +1,9 @@
 local verse = require "verse";
 
-local xmlns_vcard, xmlns_vcard_update = "vcard-temp", "vcard-temp:x:update";
+-- local xmlns_vcard = "vcard-temp";
+local xmlns_vcard_update = "vcard-temp:x:update";
 
--- MMMmmmm.. hacky
-local ok, fun = pcall(function() return require("util.hashes").sha1; end);
-if not ok then
-	ok, fun = pcall(function() return require("util.sha1").sha1; end);
-	if not ok then
-		error("Could not find a sha1()")
-	end
-end
-local sha1 = fun;
+local sha1 = require("util.hashes").sha1;
 
 local ok, fun = pcall(function()
 	local unb64 = require("util.encodings").base64.decode;
@@ -32,7 +25,7 @@ function verse.plugins.vcard_update(stream)
 
 	local x_vcard_update;
 
-	function update_vcard_photo(vCard) 
+	local function update_vcard_photo(vCard)
 		local data;
 		for i=1,#vCard do
 			if vCard[i].name == "PHOTO" then
@@ -51,10 +44,10 @@ function verse.plugins.vcard_update(stream)
 		end
 	end
 
-	local _set_vcard = stream.set_vcard;
 
 	--[[ TODO Complete this, it's probably broken.
 	-- Maybe better to hook outgoing stanza?
+	local _set_vcard = stream.set_vcard;
 	function stream:set_vcard(vCard, callback)
 		_set_vcard(vCard, function(event, ...)
 			if event.attr.type == "result" then
@@ -71,7 +64,7 @@ function verse.plugins.vcard_update(stream)
 	--]]
 
 	local initial_vcard_fetch_started;
-	stream:hook("ready", function(event)
+	stream:hook("ready", function()
 		if initial_vcard_fetch_started then return; end
 		initial_vcard_fetch_started = true;
 		-- if stream:jid_supports(nil, xmlns_vcard) then TODO this, correctly

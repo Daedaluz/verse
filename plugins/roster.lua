@@ -24,7 +24,7 @@ function verse.plugins.roster(stream)
 	local function item_lua2xml(item_table)
 		local xml_item = verse.stanza("item", { xmlns = xmlns_roster });
 		for k, v in pairs(item_table) do
-			if k ~= "groups" then 
+			if k ~= "groups" then
 				xml_item.attr[k] = v;
 			else
 				for i = 1,#v do
@@ -39,7 +39,6 @@ function verse.plugins.roster(stream)
 		local item_table = { };
 		local groups = {};
 		item_table.groups = groups;
-		local jid = xml_item.attr.jid;
 
 		for k, v in pairs(xml_item.attr) do
 			if k ~= "xmlns" then
@@ -75,8 +74,7 @@ function verse.plugins.roster(stream)
 			if reply.attr.type == "result" then
 				callback(true);
 			else
-				local type, condition, text = reply:get_error();
-				callback(nil, { type, condition, text });
+				callback(nil, reply);
 			end
 		end);
 	end
@@ -94,8 +92,7 @@ function verse.plugins.roster(stream)
 				if reply.attr.type == "result" then
 					callback(true);
 				else
-					local type, condition, text = reply:get_error();
-					callback(nil, { type, condition, text });
+					callback(nil, reply);
 				end
 			end);
 	end
@@ -126,8 +123,7 @@ function verse.plugins.roster(stream)
 					end
 					callback(roster);
 				else
-					local type, condition, text = stanza:get_error();
-					callback(nil, { type, condition, text }); --FIXME
+					callback(nil, result);
 				end
 			end);
 	end

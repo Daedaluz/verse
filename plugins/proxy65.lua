@@ -1,6 +1,6 @@
-local events = require "util.events";
+local verse =	require "verse";
 local uuid = require "util.uuid";
-local sha1 = require "util.sha1";
+local sha1 = require "util.hashes".sha1;
 
 local proxy65_mt = {};
 proxy65_mt.__index = proxy65_mt;
@@ -19,12 +19,12 @@ function verse.plugins.proxy65(stream)
 			outstanding_proxies = outstanding_proxies + 1;
 			stream:send_iq(verse.iq({ to = service.jid, type = "get" })
 				:tag("query", { xmlns = xmlns_bytestreams }), function (result)
-				
+
 				outstanding_proxies = outstanding_proxies - 1;
 				if result.attr.type == "result" then
 					local streamhost = result:get_child("query", xmlns_bytestreams)
 						:get_child("streamhost").attr;
-					
+
 					stream.proxy65.available_streamhosts[streamhost.jid] = {
 						jid = streamhost.jid;
 						host = streamhost.host;
@@ -43,14 +43,14 @@ function verse.plugins.proxy65(stream)
 			streamhosts = {},
 			current_host = 0;
 		});
-		
+
 		-- Parse hosts from request
 		for tag in request.tags[1]:childtags() do
 			if tag.name == "streamhost" then
-				table.insert(conn.streamhosts, tag.attr);	
+				table.insert(conn.streamhosts, tag.attr);
 			end
 		end
-		
+
 		--Attempt to connect to the next host
 		local function attempt_next_streamhost()
 			-- First connect, or the last connect failed
@@ -68,7 +68,7 @@ function verse.plugins.proxy65(stream)
 			stream:send(verse.error_reply(request, "cancel", "item-not-found"));
 			-- Let disconnected event fall through to user handlers...
 		end
-		
+
 		function conn:accept()
 			conn:hook("disconnected", attempt_next_streamhost, 100);
 			-- When this event fires, we're connected to a streamhost
@@ -94,14 +94,14 @@ function proxy65_mt:new(target_jid, proxies)
 		target_jid = target_jid;
 		bytestream_sid = uuid.generate();
 	});
-	
+
 	local request = verse.iq{type="set", to = target_jid}
 		:tag("query", { xmlns = xmlns_bytestreams, mode = "tcp", sid = conn.bytestream_sid });
 	for _, proxy in ipairs(proxies or self.proxies) do
 		request:tag("streamhost", proxy):up();
 	end
-	
-	
+
+
 	self.stream:send_iq(request, function (reply)
 		if reply.attr.type == "error" then
 			local type, condition, text = reply:get_error();
@@ -109,9 +109,9 @@ function proxy65_mt:new(target_jid, proxies)
 		else
 			-- Target connected to streamhost, connect ourselves
 			local streamhost_used = reply.tags[1]:get_child("streamhost-used");
-			if not streamhost_used then
+			-- if not streamhost_used then
 				--FIXME: Emit error
-			end
+			-- end
 			conn.streamhost_jid = streamhost_used.attr.jid;
 			local host, port;
 			for _, proxy in ipairs(proxies or self.proxies) do
@@ -120,24 +120,23 @@ function proxy65_mt:new(target_jid, proxies)
 					break;
 				end
 			end
-			if not (host and port) then
+			-- if not (host and port) then
 				--FIXME: Emit error
-			end
-			
+			-- end
+
 			conn:connect(host, port);
 
 			local function handle_proxy_connected()
 				conn:unhook("connected", handle_proxy_connected);
 				-- Both of us connected, tell proxy to activate connection
-				local request = verse.iq{to = conn.streamhost_jid, type="set"}
+				local activate_request = verse.iq{to = conn.streamhost_jid, type="set"}
 					:tag("query", { xmlns = xmlns_bytestreams, sid = conn.bytestream_sid })
 						:tag("activate"):text(target_jid);
-				self.stream:send_iq(request, function (reply)
-					if reply.attr.type == "result" then
+				self.stream:send_iq(activate_request, function (activated)
+					if activated.attr.type == "result" then
 						-- Connection activated, ready to use
 						conn:event("connected", conn);
-					else
-						--FIXME: Emit error
+					-- else --FIXME: Emit error
 					end
 				end);
 				return true;
@@ -151,14 +150,14 @@ function proxy65_mt:new(target_jid, proxies)
 end
 
 function negotiate_socks5(stream, conn, sid, requester_jid, target_jid)
-	local hash = sha1.sha1(sid..requester_jid..target_jid);
+	local hash = sha1(sid..requester_jid..target_jid);
 	local function suppress_connected()
 		conn:unhook("connected", suppress_connected);
 		return true;
 	end
 	local function receive_connection_response(data)
 		conn:unhook("incoming-raw", receive_connection_response);
-		
+
 		if data:sub(1, 2) ~= "\005\000" then
 			return conn:event("error", "connection-failure");
 		end
