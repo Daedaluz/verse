@@ -10,7 +10,7 @@ MISSING_FILES=$(shell $(SQUISH) --list-missing-files)
 all: verse.lua
 
 verse.lua: $(SOURCE_FILES)
-	./buildscripts/squish
+	./buildscripts/squish --debug --minify-level=debug
 
 install: verse.lua
 	install -t $(LUA_DIR) -m 644 $^
