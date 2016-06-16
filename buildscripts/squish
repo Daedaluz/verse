@@ -1,4 +1,4 @@
-#!/usr/bin/env lua
+#!/usr/bin/env lua5.1
 package.preload['optlex']=(function(...)
 local s=_G
 local u=require"string"
