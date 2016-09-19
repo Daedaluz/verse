@@ -4,7 +4,7 @@ SQUISH=./buildscripts/squish
 PROSODY_URL=https://hg.prosody.im/0.9/raw-file/tip/
 PREFIX="/usr/local"
 
-LUA_VERSION=5.1
+LUA_VERSION=5.3
 LUA_INTERPRETER=lua$LUA_VERSION
 
 if which $LUA_INTERPRETER>/dev/null; then
